@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { FormInput } from "@/src/shared/components"; 
 import { PrimaryButton } from "@/src/shared/components/primary_button";
 import { NOTIFICATION_SECTIONS, NotificationFieldConfig } from "../../constants/notifications";
+import { cn } from "@/lib/utils";
 
 interface NotificationFormProps<T extends FieldValues> {
   form: UseFormReturn<T>;
@@ -19,16 +20,10 @@ export function Notification<T extends FieldValues>({
   onSubmit, 
   submitButtonValue 
 }: NotificationFormProps<T>) {
-  
-  // Watch all values to check the boolean state of section toggles
   const formValues = useWatch({ control: form.control });
 
-  /**
-   * Renders the input fields associated with a section.
-   * Type safety is maintained because NotificationFieldConfig now uses Path<T>.
-   */
   const renderDynamicFields = (fields: NotificationFieldConfig<T>[]) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 px-4 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 px-1 md:px-4 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
       {fields.map((config) => (
         <FormField
           key={config.id}
@@ -41,6 +36,7 @@ export function Notification<T extends FieldValues>({
               placeholder={config.placeholder}
               type={config.type || "text"}
               error={fieldState.error?.message}
+              // Added subtle background for mobile inputs to distinguish from section background
             />
           )}
         />
@@ -49,13 +45,11 @@ export function Notification<T extends FieldValues>({
   );
 
   return (
-    <div className="w-full bg-white">
+    <div className="w-full bg-white max-w-4xl mx-auto">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 md:space-y-10">
           
-          {/* Map through sections defined in your constants */}
           {(NOTIFICATION_SECTIONS as unknown as any[]).map((section) => {
-            // Check if this specific section's toggle is currently 'true'
             const isEnabled = !!formValues[section.id];
             const Icon = section.icon;
 
@@ -65,42 +59,54 @@ export function Notification<T extends FieldValues>({
                   control={form.control}
                   name={section.id}
                   render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-7 bg-[#F8FAFC] border border-slate-200/60 rounded-[2.5rem] transition-all duration-300 hover:shadow-md hover:bg-white hover:border-blue-100">
-                      <div className="flex items-center gap-5">
-                        <div className="p-3.5 bg-blue-50 rounded-2xl text-blue-600 shadow-sm">
-                          <Icon size={24} />
+                    <FormItem className={cn(
+                      "flex items-start sm:items-center justify-between p-5 md:p-7 border transition-all duration-300",
+                      "rounded-3xl md:rounded-[2.5rem]", // Adjusted radius for mobile
+                      isEnabled 
+                        ? "bg-white border-blue-200 shadow-sm" 
+                        : "bg-slate-50 border-slate-200/60"
+                    )}>
+                      <div className="flex items-start gap-3 md:gap-5">
+                        {/* Icon - Smaller on mobile */}
+                        <div className={cn(
+                          "p-2.5 md:p-3.5 rounded-xl md:rounded-2xl transition-colors shrink-0",
+                          isEnabled ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"
+                        )}>
+                          <Icon size={20} className="md:w-6 md:h-6" />
                         </div>
-                        <div className="space-y-1 text-left">
-                          <FormLabel className="text-lg font-black text-slate-900 tracking-tight">
+
+                        <div className="space-y-1">
+                          <FormLabel className="text-base md:text-lg font-black text-slate-900 tracking-tight block">
                             {section.title}
                           </FormLabel>
-                          <FormDescription className="text-sm text-slate-500 font-medium">
+                          <FormDescription className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed pr-2">
                             {section.description}
                           </FormDescription>
                         </div>
                       </div>
-                      <FormControl>
+
+                      <FormControl className="mt-1 sm:mt-0">
                         <Switch 
                           checked={field.value} 
                           onCheckedChange={field.onChange}
-                          className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200"
+                          className="scale-90 md:scale-100 data-[state=checked]:bg-blue-600"
                         />
                       </FormControl>
                     </FormItem>
                   )}
                 />
 
-                {/* Show fields only when the master switch is ON */}
                 {isEnabled && renderDynamicFields(section.fields)}
               </div>
             );
           })}
 
-          <div className="pt-6 px-2">
+          {/* Sticky-ish or full-width button for mobile */}
+          <div className="pt-4 pb-8 md:pt-6 px-1">
             <PrimaryButton 
               type="submit" 
               isLoading={form.formState.isSubmitting}
-              className="w-full md:w-auto min-w-[200px] rounded-2xl h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-xl shadow-blue-100 transition-all active:scale-[0.98]"
+              className="w-full md:w-auto min-w-[240px] rounded-2xl h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-100 transition-all active:scale-[0.98]"
             >
               {submitButtonValue}
             </PrimaryButton>
