@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { format, isSameDay, parseISO } from "date-fns";
-import { Clock, Info } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
+import { format, parseISO } from "date-fns";
+import { Clock, Info, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MedicationCalendar, MedicationLogEntry } from "@/src/shared/components/calendar";
 
 // Interface for the data structure coming from the Main Page
 export interface CalendarData {
-  [dateKey: string]: { // Format: "YYYY-MM-DD"
+  [dateKey: string]: {
     status: "taken" | "missed" | "pending";
     medicationName: string;
     time: string;
@@ -17,53 +17,40 @@ export interface CalendarData {
 }
 
 interface Props {
-  data: CalendarData; // Passed from Main Page (Month-wise)
+  data: CalendarData; 
 }
 
 export function MedicationCalendarSection({ data }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Format the selected date for lookup
+  const logsArray: MedicationLogEntry[] = useMemo(() => {
+    return Object.entries(data).map(([date, details]) => ({
+      id: date, 
+      user_id: "", 
+      medication_name: details.medicationName,
+      log_date: date,
+      status: details.status as "taken" | "missed",
+      proof_url: null,
+      created_at: `${date}T${details.time}:00Z`,
+      updated_at: new Date().toISOString(),
+    }));
+  }, [data]);
+
   const dateKey = format(selectedDate, "yyyy-MM-dd");
   const dayDetails = data[dateKey];
-
-  // Modifiers for the calendar dots
-  const modifiers = useMemo(() => ({
-    taken: (date: Date) => data[format(date, "yyyy-MM-dd")]?.status === "taken",
-    missed: (date: Date) => data[format(date, "yyyy-MM-dd")]?.status === "missed",
-  }), [data]);
 
   return (
     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
       <h2 className="text-xl font-bold text-slate-800 mb-8 px-2">Medication Calendar Overview</h2>
       
       <div className="flex flex-col lg:flex-row gap-12">
-        {/* Left Side: The Calendar */}
+        {/* Left Side: Using the Reusable Component */}
         <div className="flex-1">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            modifiers={modifiers}
-            modifiersClassNames={{
-              taken: "relative after:absolute after:top-1 after:right-1 after:w-2 after:h-2 after:bg-emerald-500 after:rounded-full after:border-2 after:border-white",
-              missed: "relative after:absolute after:top-1 after:right-1 after:w-2 after:h-2 after:bg-red-400 after:rounded-full after:border-2 after:border-white",
-            }}
-            className="p-0 pointer-events-auto"
+          <MedicationCalendar 
+            logs={logsArray} 
+            selectedDate={selectedDate} 
+            onDateChange={(date) => date && setSelectedDate(date)} 
           />
-          
-          {/* Legend */}
-          <div className="mt-8 flex flex-wrap gap-4 px-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" /> MEDICATION TAKEN
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-              <span className="w-2.5 h-2.5 bg-red-400 rounded-full" /> MISSED MEDICATION
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-              <span className="w-2.5 h-2.5 bg-blue-600 rounded-full" /> TODAY
-            </div>
-          </div>
         </div>
 
         {/* Right Side: Dynamic Day Details */}
@@ -75,20 +62,34 @@ export function MedicationCalendarSection({ data }: Props) {
           {dayDetails ? (
             <div className={cn(
               "p-6 rounded-2xl border flex flex-col gap-4 transition-all animate-in fade-in slide-in-from-right-4",
-              dayDetails.status === "taken" ? "bg-emerald-50/30 border-emerald-100" : "bg-blue-50/30 border-blue-100"
+              dayDetails.status === "taken" 
+                ? "bg-emerald-50/50 border-emerald-100" 
+                : "bg-red-50/50 border-red-100"
             )}>
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2 text-blue-600 font-bold">
-                  <Clock size={18} />
-                  <span>Today</span>
+                <div className={cn(
+                  "flex items-center gap-2 font-bold",
+                  dayDetails.status === "taken" ? "text-emerald-600" : "text-red-600"
+                )}>
+                  {dayDetails.status === "taken" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                  <span className="capitalize">{dayDetails.status}</span>
                 </div>
-                {dayDetails.status === "taken" && (
-                  <span className="text-[10px] font-black uppercase bg-emerald-500 text-white px-2 py-0.5 rounded">Taken</span>
+                <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                  <Clock size={14} />
+                  <span>{dayDetails.time}</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-slate-900 font-bold text-lg">
+                  {dayDetails.medicationName}
+                </p>
+                {dayDetails.note && (
+                  <p className="text-slate-500 text-sm mt-1 bg-white/50 p-2 rounded-lg border border-slate-100 italic">
+                    "{dayDetails.note}"
+                  </p>
                 )}
               </div>
-              <p className="text-slate-600 text-sm font-medium">
-                Monitor {dayDetails.medicationName} status for today.
-              </p>
             </div>
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center text-center py-12">

@@ -1,4 +1,4 @@
-import { Sidebar } from "@/src/modules/home/component";
+import { Sidebar } from "@/src/modules/home/component/navbar";
 
 // app/dashboard/layout.tsx
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

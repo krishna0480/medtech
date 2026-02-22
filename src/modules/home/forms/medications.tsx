@@ -6,14 +6,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Camera, Check, CalendarIcon, ExternalLink, Loader2 } from "lucide-react";
 
 /* Shared / UI Imports */
-import { Form } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { MedicationCalendar } from "@/src/shared/components/calendar";
 import { medicationLogSchema, MedicationLogValues } from "../schema/medication";
 import { supabase } from "@/src/config/supabase_client";
 import { format } from "date-fns";
+import { MEDICATION_FORM_FIELDS } from "../constants/medication";
 
-// Match the interface from your Page component
+// Use this to define the structure of your fields
+export interface FormFieldConfig {
+  name: keyof MedicationLogValues;
+  label: string;
+  type: "text" | "date" | "file";
+  placeholder?: string;
+}
+
 interface MedicationLogEntry {
   id: string;
   user_id: string;
@@ -28,16 +37,15 @@ interface MedicationLogEntry {
 export interface MedicationDashboardProps {
   onSubmit: (values: MedicationLogValues) => Promise<void>;
   isSubmitting: boolean;
-  logs: MedicationLogEntry[]; 
+  logs: MedicationLogEntry[];
 }
 
 const MedicationDashboard = ({ 
   onSubmit, 
   isSubmitting,
-  logs = [] 
+  logs = [],
 }: MedicationDashboardProps) => {
 
-  /* 1. Initialize Form */
   const form = useForm<MedicationLogValues>({
     resolver: zodResolver(medicationLogSchema),
     defaultValues: {
@@ -48,40 +56,25 @@ const MedicationDashboard = ({
     },
   });
 
-  const { 
-    setValue, 
-    watch, 
-    handleSubmit,
-    setError,
-    clearErrors,
-    formState: { errors } 
-  } = form;
-
+  const { setValue, watch, handleSubmit, setError, clearErrors, formState: { errors } } = form;
   const [isUploading, setIsUploading] = useState(false);
+  
   const activeDate = watch("date");
   const currentPhotoUrl = watch("proofPhoto");
 
-  /* 2. AUTO-SYNC: When activeDate changes, check if a log already exists in the 'logs' prop */
   useEffect(() => {
     const selectedDateString = format(activeDate, "yyyy-MM-dd");
     const existingEntry = logs.find(log => log.log_date === selectedDateString);
 
     if (existingEntry) {
-      // Populate form with existing data for this date
       setValue("status", existingEntry.status);
       setValue("proofPhoto", existingEntry.proof_url || "");
+      setValue("medicationName", existingEntry.medication_name);
     } else {
-      // Reset to defaults for a fresh day
       setValue("status", "taken");
       setValue("proofPhoto", "");
     }
   }, [activeDate, logs, setValue]);
-
-  const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      setValue("date", date, { shouldValidate: true });
-    }
-  };
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,10 +91,7 @@ const MedicationDashboard = ({
         .upload(`med-proofs/${fileName}`, file);
 
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("proofs")
-        .getPublicUrl(`med-proofs/${fileName}`);
+      const { data: { publicUrl } } = supabase.storage.from("proofs").getPublicUrl(`med-proofs/${fileName}`);
 
       setValue("proofPhoto", publicUrl, { shouldValidate: true });
       clearErrors("proofPhoto");
@@ -114,93 +104,84 @@ const MedicationDashboard = ({
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-6xl mx-auto">
-      
-      {/* LEFT COLUMN: FORM */}
       <div className="flex-1 space-y-4">
-        <div className="flex items-center gap-2 mb-2 text-blue-600">
+        <header className="flex items-center gap-2 mb-2 text-blue-600">
           <CalendarIcon size={20} />
           <h2 className="text-xl font-bold text-slate-800">
             Log for {format(activeDate, "MMMM do, yyyy")}
           </h2>
-        </div>
+        </header>
 
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border rounded-[2.5rem] p-8 shadow-sm">
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               
-              {/* Photo Upload Area */}
-              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/30 flex flex-col items-center min-h-[250px] justify-center">
-                {isUploading ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="animate-spin text-blue-600" />
-                    <span className="text-sm text-slate-500">Uploading to proofs...</span>
-                  </div>
-                ) : currentPhotoUrl ? (
-                  <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
-                    <img src={currentPhotoUrl} className="w-32 h-32 object-cover rounded-xl mb-3 border shadow-md" alt="Medication proof" />
-                    <div className="flex gap-4">
-                      <a href={currentPhotoUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
-                        <ExternalLink size={14} /> Full View
-                      </a>
-                      <button type="button" onClick={() => setValue("proofPhoto", "")} className="text-xs font-bold text-red-500 hover:text-red-700">
-                        Change Photo
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Camera size={48} className="text-slate-300 mb-4" />
-                    <input type="file" id="photo" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                    <label htmlFor="photo" className="cursor-pointer px-8 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all active:scale-95">
-                      Upload Proof Image
-                    </label>
-                    <p className="text-xs text-slate-400 mt-4">Capture your medication to verify</p>
-                  </>
-                )}
-                {errors.proofPhoto && <p className="text-red-500 text-xs mt-2 font-medium">{errors.proofPhoto.message}</p>}
-              </div>
+              {/* DYNAMIC FIELD MAPPING */}
+              {MEDICATION_FORM_FIELDS.map((field) => (
+                <FormField
+                  key={field.name}
+                  control={form.control}
+                  name={field.name}
+                  render={({ field: formField }) => (
+                    <FormItem>
+                      {field.type !== "file" && <FormLabel className="font-bold text-slate-700">{field.label}</FormLabel>}
+                      
+                      <FormControl>
+                        {field.type === "text" ? (
+                          <Input 
+                            {...formField} 
+                            placeholder={field.placeholder} 
+                            className="rounded-xl h-12 border-slate-200 focus:ring-blue-500"
+                            value={formField.value instanceof Date ? "" : formField.value}
+                          />
+                        ) : field.type === "file" ? (
+                          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/30 flex flex-col items-center justify-center min-h-[200px]">
+                            {isUploading ? (
+                              <Loader2 className="animate-spin text-blue-600" />
+                            ) : currentPhotoUrl ? (
+                              <div className="text-center">
+                                <img src={currentPhotoUrl} className="w-24 h-24 object-cover rounded-xl mx-auto border mb-2" alt="Proof" />
+                                <button type="button" onClick={() => setValue("proofPhoto", "")} className="text-xs font-bold text-red-500">Remove</button>
+                              </div>
+                            ) : (
+                              <>
+                                <Camera size={32} className="text-slate-300 mb-2" />
+                                <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                                <label htmlFor="photo-upload" className="cursor-pointer text-sm font-bold text-blue-600 hover:underline">
+                                  {field.label}
+                                </label>
+                              </>
+                            )}
+                          </div>
+                        ) : null /* Date is handled by the Calendar on the right */}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
 
               <Button 
                 type="submit" 
                 disabled={isUploading || isSubmitting} 
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 rounded-xl font-bold text-lg shadow-lg shadow-emerald-100 transition-all"
+                className="w-full bg-slate-900 hover:bg-black text-white h-14 rounded-2xl font-bold transition-all shadow-lg"
               >
                 {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Check className="mr-2" />}
-                {logs.some(l => l.log_date === format(activeDate, "yyyy-MM-dd")) ? "Update Log" : "Mark as Taken"}
+                {logs.some(l => l.log_date === format(activeDate, "yyyy-MM-dd")) ? "Update Record" : "Log Medication"}
               </Button>
             </form>
           </Form>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: CALENDAR */}
+      {/* CALENDAR COLUMN */}
       <div className="w-full lg:w-[380px] space-y-4">
-        <h2 className="text-xl font-bold text-slate-800 px-2">Adherence History</h2>
-        <div className="bg-white border rounded-3xl p-6 shadow-sm border-slate-100">
+        <div className="bg-white border rounded-[2.5rem] p-6 shadow-sm border-slate-100">
           <MedicationCalendar 
             logs={logs} 
             selectedDate={activeDate}
-            onDateChange={handleDateChange} 
+            onDateChange={(date) => date && setValue("date", date)} 
           />
-          
-          <div className="mt-8 pt-6 border-t border-slate-50 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <span className="w-3 h-3 bg-emerald-500 rounded-full shadow-sm shadow-emerald-200" /> Taken
-              </div>
-              <span className="text-xs font-bold bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">
-                {logs.filter(l => l.status === "taken").length} Days
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <span className="w-3 h-3 bg-red-400 rounded-full shadow-sm shadow-red-200" /> Missed
-              </div>
-              <span className="text-xs font-bold bg-red-50 text-red-700 px-2 py-1 rounded-full">
-                {logs.filter(l => l.status === "missed").length} Days
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

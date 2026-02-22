@@ -1,9 +1,34 @@
-export const MEDICATION_STATUS_OPTIONS = [
-  { label: "Taken", value: "taken" },
-  { label: "Missed", value: "missed" },
-] as const;
+import { MedicationLogValues } from "../schema/medication";
 
-export const MEDICATION_DEFAULTS = {
-  name: "Daily Medication Set",
-  time: "8:00 AM"
-};
+export type FieldType = "text" | "date" | "file" | "select";
+
+export interface DynamicField {
+  name: keyof MedicationLogValues;
+  label: string;
+  type: FieldType;
+  placeholder?: string;
+  description?: string;
+  options?: { label: string; value: string }[]; // For future select fields
+}
+
+export const MEDICATION_FORM_FIELDS: DynamicField[] = [
+  {
+    name: "medicationName",
+    label: "Medication Name",
+    type: "text",
+    placeholder: "e.g., Morning Dosage (Pills)",
+    description: "Specify the medication or set you are logging."
+  },
+  {
+    name: "date",
+    label: "Schedule Date",
+    type: "date",
+    description: "The date this medication was intended for."
+  },
+  {
+    name: "proofPhoto",
+    label: "Photo Verification",
+    type: "file",
+    description: "Upload a clear photo of your medication."
+  }
+];

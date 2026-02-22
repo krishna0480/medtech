@@ -65,7 +65,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (loading) return;
 
-    const isPublicPage = pathname === "/login" || pathname === "/signup";
+    const isPublicPage = pathname === "/login" || pathname === "/signup" || pathname == '/';
 
     if (!session && !isPublicPage) {
       router.replace("/login");

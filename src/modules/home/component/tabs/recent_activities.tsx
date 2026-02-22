@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, Camera, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 // Import the strict type we defined in the Page
 import { format, parseISO } from "date-fns";
-import { MedicationLogEntry } from "../../page/care_taker_page";
+import { MedicationLogEntry } from "../../hooks/use_patient_data";
 
 interface ActivityCardProps {
   log: MedicationLogEntry;
