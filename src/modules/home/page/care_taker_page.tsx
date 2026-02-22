@@ -42,11 +42,11 @@ export default function CareTakerPage() {
 
       if (error) throw error;
 
-      await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, patientName, time }),
-      });
+      // await fetch('/api/send-email', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email, patientName, time }),
+      // });
 
       alert("Settings updated and patient notified!");
     } catch (err: any) {

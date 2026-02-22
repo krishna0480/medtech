@@ -46,12 +46,12 @@ export default function SignupPage() {
       if (authError) throw authError;
 
       if (data.user) {
-        const { error: dbError } = await supabase.from('users').insert({
-          id: data.user.id,
-          username: values.username,
-        });
+        // const { error: dbError } = await supabase.from('users').insert({
+        //   id: data.user.id,
+        //   username: values.username,
+        // });
 
-        if (dbError) throw dbError;
+        // if (dbError) throw dbError;
 
         alert("Signed up successfully, proceed to login");
         router.push("/login");
