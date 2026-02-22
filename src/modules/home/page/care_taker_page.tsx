@@ -62,20 +62,7 @@ export default function CareTakerPage() {
             <h1 className="text-3xl font-black text-slate-900 leading-tight tracking-tighter">MediCare Companion</h1>
             <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">Monitoring Dashboard</p>
           </div>
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              className="rounded-2xl font-bold px-6 border-slate-200" 
-              onClick={refresh}
-              disabled={isLoading}
-            >
-              {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-              {isLoading ? "Syncing..." : "Refresh Data"}
-            </Button>
-            <Button className="rounded-2xl font-bold px-6 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100">
-              Switch to Patient
-            </Button>
-          </div>
+      
         </header>
 
         <FormErrorBoundary>
