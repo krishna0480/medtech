@@ -22,18 +22,6 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* Features List */}
-        <div className="space-y-4 py-8">
-          <div className="flex items-center space-x-4 text-left p-4 bg-white rounded-2xl shadow-sm">
-            <Bell className="text-blue-500 h-6 w-6" />
-            <p className="text-slate-600 font-medium">Automatic alerts if a dose is missed.</p>
-          </div>
-          <div className="flex items-center space-x-4 text-left p-4 bg-white rounded-2xl shadow-sm">
-            <ShieldCheck className="text-green-500 h-6 w-6" />
-            <p className="text-slate-600 font-medium">Secure tracking for medication history.</p>
-          </div>
-        </div>
-
         {/* Buttons */}
         <div className="flex flex-col space-y-4">
           <Link href="/sign_up" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl transition-all shadow-md text-center">
